@@ -1,6 +1,14 @@
-Create Database TestDB;
+-- 1. Create a new database named TestDB
+CREATE DATABASE TestDB;
+GO
 
-use TestDB;
+-- 2. Switch to TestDB so our next commands run inside it
+USE TestDB;
+GO
 
-Select *
-from sys.databases;
+-- 3. List all databases to verify TestDB was created
+SELECT name, create_date 
+FROM sys.databases;
+GO
+
+
