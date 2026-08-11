@@ -1,0 +1,2 @@
+Select *
+from sys.databases;

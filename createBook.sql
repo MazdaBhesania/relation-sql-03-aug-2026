@@ -1,0 +1,8 @@
+CREATE TABLE Books
+(
+    book_id INT IDENTITY(1,1) PRIMARY KEY,
+    title NVARCHAR(255) NOT NULL,
+    author NVARCHAR(255) NOT NULL,
+    genre NVARCHAR(100)
+);
+GO
