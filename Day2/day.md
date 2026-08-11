@@ -96,3 +96,34 @@
     WHERE JobTitle = 'Software Engineer' 
     AND Salary > 70000;
     ```
+
+    C. Range & List Filtering (`BETWEEN`, `IN`)
+
+    ```SQL
+    -- Filtering within a range 
+    SELECT EmployeeID, Salary
+    FROM dbo.Employees
+    WHERE Salary BETWEEN 50000 AND 80000;
+
+    -- Filtering against a list of specific values
+    SELECT FirstName, LastName, Department
+    FROM dbo.Employees
+    WHERE Department IN ('IT', 'HR', 'Finance');
+    ```
+
+    D. Pattern Matching (`LIKE` & `Wildcard`)
+    use `LIKE` to search for specific text patterns:
+    - `%` represent zero, one or multiple characters. 
+    - `_` represents a single character. 
+
+    ```SQL
+    -- Find Employees whose last name starts with 'S'
+    SELECT FirstName, LastName
+    FROM dbo.Employees
+    WHERE LastName Like 'S%';
+
+    -- Find emails ending in @company.com
+    SELECT Email
+    FROM dbo.Employees
+    WHERE Email LIKE '%@company.com';
+    ```
