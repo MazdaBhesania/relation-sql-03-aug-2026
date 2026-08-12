@@ -24,3 +24,21 @@ Task 1: Write a query to select `FirstName`, `LastName`, and `GPA` for all stude
 Task 2: Retrieve all students majoring in either `Computer Science` or `Data Science` who have a `GPA` greater than `3.20`.
 
 Task 3: Find all students whose `LastName` starts with the letter `J` or who enrolled between `2021` and `2023`.
+
+```SQL
+-- Task 1 Solution
+SELECT FirstName, LastName, GPA AS [Grade Point Average]
+FROM dbo.Students;
+
+-- Task 2 Solution
+SELECT FirstName, LastName, Major, GPA
+FROM dbo.Students
+WHERE Major IN ('Computer Science', 'Data Science')
+  AND GPA > 3.20;
+
+-- Task 3 Solution
+SELECT *
+FROM dbo.Students
+WHERE LastName LIKE 'J%'
+   OR EnrollmentYear BETWEEN 2021 AND 2023;
+```
