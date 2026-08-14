@@ -17,7 +17,8 @@ INSERT INTO dbo.Products VALUES
 (203, 'Desk Mat', 'Accessories', 19.99, 200, 4.2),
 (204, 'Gaming Monitor', 'Electronics', 249.99, 15, 4.7),
 (205, 'Ergonomic Chair', 'Furniture', 199.99, 8, 4.1),
-(206, 'USB-C Cable', 'Accessories', 12.99, 300, 3.9);
+(206, 'USB-C Cable', 'Accessories', 12.99, 300, 3.9),
+(207, 'Lap ', 'Accessories', 19.99, 200, 4.2);
 ```
 
 Student Tasks:
@@ -48,7 +49,7 @@ Task 6 (Hard): The company is running a 15% off discount campaign for high-inven
 **Filter the results** to only include products where:
 
 - `StockQuantity` is greater than `100`
-- The `ProductName` contains at least two words (i.e. contains a space using `LIKE '% %'`)
+- The `ProductName` contains at least two words (i.e. a space with actual characters before and after it using `LIKE '%_ _%'`)
 - The projected discounted revenue (`Price * 0.85 * StockQuantity`) is greater than `3000.00`.
   *(Note: Because of SQL processing order `FROM -> WHERE -> SELECT`, you must use the calculation in the `WHERE` clause rather than the alias).*
 
@@ -92,6 +93,6 @@ SELECT
     Price * 0.15 * StockQuantity AS [Customer Savings]
 FROM dbo.Products
 WHERE StockQuantity > 100
-  AND ProductName LIKE '% %'
+  AND ProductName LIKE '%_ _%' -- '%_ _%' ensures at least 1 character exists before and after the space (prevents false matches on trailing spaces like 'Lap ')
   AND (Price * 0.85 * StockQuantity) > 3000.00;
 ```
