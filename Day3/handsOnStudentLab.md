@@ -1,4 +1,5 @@
 Setup Script (Run in SSMS):
+
 ```SQL
 -- Drop existing table if it exists
 IF OBJECT_ID('dbo.Books', 'U') IS NOT NULL
@@ -40,6 +41,7 @@ Student Tasks:
 Task 1 (Single-Column Sorting): Write a query to retrieve `Title`, `Author`, `Price`, and `PublishYear` for all books, sorted by `Price` from most expensive to least expensive (descending order).
 
 Task 2 (Multi-Column Sorting & Tie-Breaking): Write a query to display `Title`, `Genre`, `Rating`, and `Price`. Sort the results:
+
 - Primarily by `Genre` alphabetically (A to Z)
 - Secondarily by `Rating` from highest to lowest (descending)
 - Tertiarily by `Title` alphabetically (A to Z) to break any remaining ties.
@@ -48,22 +50,96 @@ Task 3 (Sorting by Computed Expression / Alias): Write a query to display `Title
 *(Hint: In SQL Server, can you use the column alias in the `ORDER BY` clause? Why?)*
 
 Task 4 (Row Limiting with TOP):
+
 - **Part A**: Retrieve the top 3 most expensive books in the catalog (`Title`, `Author`, `Price`).
 - **Part B**: Retrieve the top 25% highest-rated books across the entire catalog (`Title`, `Rating`, `Genre`), sorted from highest rating to lowest.
 
 Task 5 (Handling Duplicate Ranks with TOP WITH TIES):
+
 - Retrieve the top 4 highest-rated books (`Title`, `Rating`, `Genre`).
 - Use `WITH TIES` to ensure that any other books sharing the exact same rating as the 4th book are also included in the output.
 
 Task 6 (Basic Result Set Pagination):
 Imagine you are building a bookstore web application where 5 books are displayed per page, sorted by `PublishYear` from newest to oldest, with `BookID ASC` as the unique tie-breaker:
+
 - **Query A (Page 1)**: Retrieve records 1 through 5 (Page 1).
 - **Query B (Page 2)**: Retrieve records 6 through 10 (Page 2).
 - **Query C (Page 3)**: Retrieve records 11 through 15 (Page 3).
 
 Task 7 (Filtered Pagination):
 A customer searches for books in either the `'Data Science'` or `'Computer Science'` genre with a `Price` under `100.00`.
+
 - Display `Title`, `Genre`, `Price`, and `Rating`.
 - Sort the results by `Rating` descending, and then `Price` ascending.
 - Return **Page 1** with a page size of **4** books per page.
 
+```SQL
+-- Task 1 Solution
+SELECT Title, Author, Price, PublishYear
+FROM dbo.Books
+ORDER BY Price DESC;
+
+-- Task 2 Solution
+SELECT Title, Genre, Rating, Price
+FROM dbo.Books
+ORDER BY Genre ASC, Rating DESC, Title ASC;
+
+-- Task 3 Solution
+-- Note: In SQL Server's logical query processing, ORDER BY executes after SELECT, so column aliases are valid in ORDER BY.
+SELECT 
+    Title, 
+    Price, 
+    CopiesSold, 
+    (Price * CopiesSold) AS [Total Revenue]
+FROM dbo.Books
+ORDER BY [Total Revenue] DESC;
+
+-- Task 4 Solution
+-- Part A: Top 3 Most Expensive Books
+SELECT TOP (3) Title, Author, Price
+FROM dbo.Books
+ORDER BY Price DESC;
+
+-- Part B: Top 25% Highest Rated Books
+SELECT TOP (25) PERCENT Title, Rating, Genre
+FROM dbo.Books
+ORDER BY Rating DESC;
+
+-- Task 5 Solution
+-- WITH TIES includes all rows that share the same Rating value as the 4th ranked record
+SELECT TOP (4) WITH TIES Title, Rating, Genre
+FROM dbo.Books
+ORDER BY Rating DESC;
+
+-- Task 6 Solution
+-- Query A: Page 1 (Skip 0, Fetch 5)
+SELECT BookID, Title, Genre, PublishYear
+FROM dbo.Books
+ORDER BY PublishYear DESC, BookID ASC
+OFFSET 0 ROWS
+FETCH NEXT 5 ROWS ONLY;
+
+-- Query B: Page 2 (Skip 5, Fetch 5)
+SELECT BookID, Title, Genre, PublishYear
+FROM dbo.Books
+ORDER BY PublishYear DESC, BookID ASC
+OFFSET 5 ROWS
+FETCH NEXT 5 ROWS ONLY;
+
+-- Query C: Page 3 (Skip 10, Fetch 5)
+SELECT BookID, Title, Genre, PublishYear
+FROM dbo.Books
+ORDER BY PublishYear DESC, BookID ASC
+OFFSET 10 ROWS
+FETCH NEXT 5 ROWS ONLY;
+
+-- Task 7 Solution
+-- Filter first (WHERE), sort next (ORDER BY), then paginate (OFFSET ... FETCH)
+SELECT Title, Genre, Price, Rating
+FROM dbo.Books
+WHERE Genre IN ('Data Science', 'Computer Science')
+  AND Price < 100.00
+ORDER BY Rating DESC, Price ASC
+OFFSET 0 ROWS
+FETCH NEXT 4 ROWS ONLY;
+```
