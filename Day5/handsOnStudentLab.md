@@ -65,6 +65,7 @@ erDiagram
 > [!TIP]
 > **Viewing in SQL Server Management Studio (SSMS):**
 > Once you run the setup script below, you can visualize these relationships directly in SSMS:
+>
 > 1. Expand your database in **Object Explorer**.
 > 2. Right-click **Database Diagrams** $\rightarrow$ select **New Database Diagram**.
 > 3. Add all 6 tables (`Customers`, `Categories`, `Products`, `Orders`, `OrderDetails`, `Employees`).
@@ -73,6 +74,7 @@ erDiagram
 ---
 
 ## Setup Script (Run in SSMS):
+
 ```SQL
 -- ============================================================================
 -- Day 5: Combining Multiple Tables with JOINs in T-SQL
@@ -220,38 +222,50 @@ INSERT INTO dbo.Employees VALUES
 ## Student Tasks:
 
 ### Task 1 (Basic Two-Table INNER JOIN):
+
 Write a query to retrieve all orders placed by registered customers:
+
 - Select `CustomerID` and `CustomerName` from `dbo.Customers`.
 - Select `OrderID`, `OrderDate`, and `TotalAmount` from `dbo.Orders`.
 - Use an `INNER JOIN` matching on `CustomerID`.
 - Sort by `OrderDate` descending.
 
 ### Task 2 (Multi-Table INNER JOIN — Chaining 4 Tables):
+
 Write a query to build a comprehensive line-item sales report:
+
 - Display `CustomerName`, `OrderID`, `OrderDate`, `ProductName`, `Quantity`, `UnitPrice` (from `OrderDetails`), and calculate line item total as `[LineTotal]` (`Quantity * UnitPrice * (1 - Discount)`).
 - Join `dbo.Customers`, `dbo.Orders`, `dbo.OrderDetails`, and `dbo.Products`.
 - Sort by `OrderID` ascending, then `LineTotal` descending.
 
 ### Task 3 (LEFT OUTER JOIN):
+
 Write a query to inspect customer purchase activity:
+
 - Display `CustomerID`, `CustomerName`, and `City` from `dbo.Customers`.
 - Display `OrderID` and `TotalAmount` from `dbo.Orders`.
 - Ensure **all** customers appear in the output, even if they have not placed any orders.
 - Sort by `TotalAmount` descending.
 
 ### Task 4 (Anti-Join — Identifying Inactive Records with `IS NULL`):
+
 Write two separate queries to find orphan / unused records:
+
 1. **Query 4A**: Find all customers who have **never placed an order**. Display `CustomerID`, `CustomerName`, `ContactEmail`, and `City`.
 2. **Query 4B**: Find all products that have **never been ordered**. Display `ProductID`, `ProductName`, and `UnitPrice`.
 
 ### Task 5 (RIGHT OUTER JOIN):
+
 Write a query to list all product categories and their associated products:
+
 - Display `CategoryName` from `dbo.Categories` and `ProductName`, `UnitPrice` from `dbo.Products`.
 - Use a `RIGHT OUTER JOIN` starting with `dbo.Products` on the left and `dbo.Categories` on the right (or vice versa with `LEFT JOIN`) so that categories with **no products** (such as `'Industrial Goods'`) are still included in the result.
 - Sort by `CategoryName` ascending.
 
 ### Task 6 (FULL OUTER JOIN):
+
 Write a query to analyze the relationship between `dbo.Customers` and `dbo.Orders`:
+
 - Display `c.CustomerID` as `[Cust_CustomerID]`, `c.CustomerName`, `o.OrderID`, `o.CustomerID` as `[Order_CustomerID]`, and `o.TotalAmount`.
 - Use a `FULL OUTER JOIN` to return:
   - Customers with matching orders.
@@ -259,28 +273,170 @@ Write a query to analyze the relationship between `dbo.Customers` and `dbo.Order
   - Orders with no assigned customer (e.g. Order 1006).
 
 ### Task 7 (CROSS JOIN — Matrix / Combination Generation):
+
 The marketing team wants to evaluate regional demand for product categories:
+
 - Generate a Cartesian product combining all distinct customer `City` values from `dbo.Customers` with all `CategoryName` values from `dbo.Categories`.
 - Display `City` and `CategoryName`.
 - Sort by `City` ascending, then `CategoryName` ascending.
 
 ### Task 8 (Self Join — Hierarchical Reporting Structure):
+
 Write a query to display the employee organizational hierarchy:
+
 - Display employee's full name as `[Employee Name]`, `JobTitle` as `[Employee Title]`, and `Department`.
 - Display their manager's full name as `[Manager Name]` and `JobTitle` as `[Manager Title]`.
 - Use a `LEFT JOIN` on `dbo.Employees` so that the CEO (who has `ManagerID IS NULL`) is included, displaying `'Top Executive'` if the manager name is NULL using `ISNULL()`.
 - Sort by `Department`, then `[Employee Name]`.
 
 ### Task 9 (Self Join — Intra-Table Comparison):
+
 Find all pairs of distinct customers located in the same city:
+
 - Display `City`, `c1.CustomerName` as `[Customer 1]`, and `c2.CustomerName` as `[Customer 2]`.
 - Ensure a customer is not paired with themselves and avoid duplicate mirror pairs (e.g., only show `(Acme Corp, Nordic Ventures)`, not both `(Acme, Nordic)` and `(Nordic, Acme)`).
 
 ### Task 10 (Advanced Multi-Table Join with Aggregation):
+
 Write a query to compute overall sales summary metrics per customer:
+
 - Display `c.CustomerID`, `c.CustomerName`, total number of orders placed as `[Total Orders]`, and total revenue generated as `[Total Spent]`.
 - Include customers with zero orders (showing `0` for orders and `0.00` for total spent using `COUNT(o.OrderID)` and `ISNULL(SUM(o.TotalAmount), 0.00)`).
 - Filter using `HAVING` to show only customers who have placed at least 1 order or sort all customers by `[Total Spent]` descending.
 
 ---
 
+## Solutions:
+
+```SQL
+-- ============================================================================
+-- Day 5 Solutions
+-- ============================================================================
+
+-- Task 1 Solution: Basic Two-Table INNER JOIN
+SELECT 
+    c.CustomerID,
+    c.CustomerName,
+    o.OrderID,
+    o.OrderDate,
+    o.TotalAmount
+FROM dbo.Customers AS c
+INNER JOIN dbo.Orders AS o
+    ON c.CustomerID = o.CustomerID
+ORDER BY o.OrderDate DESC;
+
+-- Task 2 Solution: Multi-Table INNER JOIN (4 Tables)
+SELECT 
+    c.CustomerName,
+    o.OrderID,
+    o.OrderDate,
+    p.ProductName,
+    od.Quantity,
+    od.UnitPrice,
+    CAST((od.Quantity * od.UnitPrice * (1.0 - od.Discount)) AS DECIMAL(10,2)) AS [LineTotal]
+FROM dbo.Customers AS c
+INNER JOIN dbo.Orders AS o
+    ON c.CustomerID = o.CustomerID
+INNER JOIN dbo.OrderDetails AS od
+    ON o.OrderID = od.OrderID
+INNER JOIN dbo.Products AS p
+    ON od.ProductID = p.ProductID
+ORDER BY o.OrderID ASC, [LineTotal] DESC;
+
+-- Task 3 Solution: LEFT OUTER JOIN (Preserves all customers)
+SELECT 
+    c.CustomerID,
+    c.CustomerName,
+    c.City,
+    o.OrderID,
+    o.TotalAmount
+FROM dbo.Customers AS c
+LEFT OUTER JOIN dbo.Orders AS o
+    ON c.CustomerID = o.CustomerID
+ORDER BY o.TotalAmount DESC;
+
+-- Task 4A Solution: Anti-Join (Customers with no orders)
+SELECT 
+    c.CustomerID,
+    c.CustomerName,
+    c.ContactEmail,
+    c.City
+FROM dbo.Customers AS c
+LEFT JOIN dbo.Orders AS o
+    ON c.CustomerID = o.CustomerID
+WHERE o.OrderID IS NULL;
+
+-- Task 4B Solution: Anti-Join (Products that have never been ordered)
+SELECT 
+    p.ProductID,
+    p.ProductName,
+    p.UnitPrice
+FROM dbo.Products AS p
+LEFT JOIN dbo.OrderDetails AS od
+    ON p.ProductID = od.ProductID
+WHERE od.OrderDetailID IS NULL;
+
+-- Task 5 Solution: RIGHT OUTER JOIN (Preserving Categories with no products)
+SELECT 
+    cat.CategoryName,
+    p.ProductName,
+    p.UnitPrice
+FROM dbo.Products AS p
+RIGHT OUTER JOIN dbo.Categories AS cat
+    ON p.CategoryID = cat.CategoryID
+ORDER BY cat.CategoryName ASC;
+
+-- Task 6 Solution: FULL OUTER JOIN (Matched + Unmatched from both tables)
+SELECT 
+    c.CustomerID AS [Cust_CustomerID],
+    c.CustomerName,
+    o.OrderID,
+    o.CustomerID AS [Order_CustomerID],
+    o.TotalAmount
+FROM dbo.Customers AS c
+FULL OUTER JOIN dbo.Orders AS o
+    ON c.CustomerID = o.CustomerID;
+
+-- Task 7 Solution: CROSS JOIN (Cartesian Product for Matrix Generation)
+SELECT DISTINCT 
+    c.City,
+    cat.CategoryName
+FROM dbo.Customers AS c
+CROSS JOIN dbo.Categories AS cat
+ORDER BY c.City ASC, cat.CategoryName ASC;
+
+-- Task 8 Solution: Self Join (Organizational Chart Hierarchy)
+SELECT 
+    emp.FirstName + ' ' + emp.LastName AS [Employee Name],
+    emp.JobTitle AS [Employee Title],
+    emp.Department,
+    ISNULL(mgr.FirstName + ' ' + mgr.LastName, 'Top Executive') AS [Manager Name],
+    ISNULL(mgr.JobTitle, 'N/A') AS [Manager Title]
+FROM dbo.Employees AS emp
+LEFT OUTER JOIN dbo.Employees AS mgr
+    ON emp.ManagerID = mgr.EmployeeID
+ORDER BY emp.Department ASC, [Employee Name] ASC;
+
+-- Task 9 Solution: Self Join (Comparing rows within the same table)
+SELECT 
+    c1.City,
+    c1.CustomerName AS [Customer 1],
+    c2.CustomerName AS [Customer 2]
+FROM dbo.Customers AS c1
+INNER JOIN dbo.Customers AS c2
+    ON c1.City = c2.City
+   AND c1.CustomerID < c2.CustomerID
+ORDER BY c1.City ASC;
+
+-- Task 10 Solution: Advanced Multi-Table Join with Aggregations
+SELECT 
+    c.CustomerID,
+    c.CustomerName,
+    COUNT(o.OrderID) AS [Total Orders],
+    ISNULL(SUM(o.TotalAmount), 0.00) AS [Total Spent]
+FROM dbo.Customers AS c
+LEFT JOIN dbo.Orders AS o
+    ON c.CustomerID = o.CustomerID
+GROUP BY c.CustomerID, c.CustomerName
+ORDER BY [Total Spent] DESC;
+```
