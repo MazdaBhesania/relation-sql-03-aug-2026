@@ -356,5 +356,162 @@ Generate an order packing manifest for all multi-item orders:
 -- Day 6 Lab Solutions
 -- ============================================================================
 
--- Task 1
+-- Task 1 Solution: Scalar Subquery in WHERE
+SELECT 
+    ProductID,
+    ProductName,
+    UnitPrice
+FROM dbo.Products
+WHERE UnitPrice > (
+    SELECT AVG(UnitPrice) 
+    FROM dbo.Products
+)
+ORDER BY UnitPrice DESC;
+
+-- Task 2 Solution: Scalar Subquery in SELECT
+SELECT 
+    ProductID,
+    ProductName,
+    UnitPrice,
+    (SELECT MAX(UnitPrice) FROM dbo.Products) AS [MaxCatalogPrice],
+    (SELECT MAX(UnitPrice) FROM dbo.Products) - UnitPrice AS [PriceDifferenceFromMax]
+FROM dbo.Products
+ORDER BY [PriceDifferenceFromMax] ASC;
+
+-- Task 3 Solution: Multi-Valued Subquery with IN
+SELECT 
+    c.CustomerID,
+    c.FullName,
+    c.City,
+    c.Country
+FROM dbo.Customers AS c
+WHERE c.CustomerID IN (
+    SELECT o.CustomerID
+    FROM dbo.Orders AS o
+    INNER JOIN dbo.OrderDetails AS od
+        ON o.OrderID = od.OrderID
+    WHERE od.UnitPrice >= 400.00
+)
+ORDER BY c.FullName ASC;
+
+-- Task 4 Solution: Safe Anti-Join using NOT EXISTS
+SELECT 
+    c.CustomerID,
+    c.FullName,
+    c.City,
+    ISNULL(c.ContactEmail, 'NO_EMAIL_ON_FILE') AS ContactEmail
+FROM dbo.Customers AS c
+WHERE NOT EXISTS (
+    SELECT 1 
+    FROM dbo.Orders AS o 
+    WHERE o.CustomerID = c.CustomerID
+);
+
+-- Task 5 Solution: Correlated Subquery
+SELECT 
+    o1.CustomerID,
+    o1.OrderID,
+    o1.OrderDate,
+    o1.ShipCity
+FROM dbo.Orders AS o1
+WHERE o1.OrderDate = (
+    SELECT MAX(o2.OrderDate)
+    FROM dbo.Orders AS o2
+    WHERE o2.CustomerID = o1.CustomerID
+)
+ORDER BY o1.CustomerID ASC;
+
+-- Task 6 Solution: Correlated Subquery with EXISTS
+SELECT 
+    c.CategoryID,
+    c.CategoryName
+FROM dbo.Categories AS c
+WHERE EXISTS (
+    SELECT 1
+    FROM dbo.Products AS p
+    WHERE p.CategoryID = c.CategoryID
+      AND p.StockQty > 20
+)
+ORDER BY c.CategoryName ASC;
+
+-- Task 7 Solution: String & Date/Time Built-in Functions
+SELECT 
+    FullName,
+    CASE 
+        WHEN ContactEmail IS NULL THEN 'NO_EMAIL'
+        ELSE SUBSTRING(ContactEmail, CHARINDEX('@', ContactEmail) + 1, LEN(ContactEmail))
+    END AS [EmailDomain],
+    YEAR(RegistrationDate) AS [RegYear],
+    DATEDIFF(day, RegistrationDate, GETDATE()) AS [TenureDays]
+FROM dbo.Customers
+ORDER BY [TenureDays] DESC;
+
+-- Task 8 Solution: Conversion & Safe Parsing
+SELECT 
+    OrderID,
+    OrderDate,
+    CONVERT(VARCHAR(10), OrderDate, 101) AS [US_OrderDate],
+    CONVERT(VARCHAR(10), OrderDate, 120) AS [ISO_OrderDate],
+    TRY_CONVERT(INT, ShipCity)            AS [SafeCityAsInt]
+FROM dbo.Orders;
+
+-- Task 9 Solution: Inline Logical Functions (IIF, CHOOSE, COALESCE)
+SELECT 
+    OrderID,
+    OrderDate,
+    ShippingFee,
+    IIF(ShippingFee = 0.00, 'Free Shipping', 'Standard Shipping') AS [ShippingClassification],
+    CHOOSE(StatusCode, 'Pending', 'Processing', 'Shipped', 'Delivered') AS [OrderStatusDescription],
+    COALESCE(CustomerID, -1) AS [CustomerAccountID]
+FROM dbo.Orders
+ORDER BY OrderID ASC;
+
+-- Task 10 Solution: Ranking Functions with OVER()
+SELECT 
+    CategoryID,
+    ProductName,
+    UnitPrice,
+    ROW_NUMBER() OVER(PARTITION BY CategoryID ORDER BY UnitPrice DESC) AS [RowNumber],
+    RANK()       OVER(PARTITION BY CategoryID ORDER BY UnitPrice DESC) AS [Rank],
+    DENSE_RANK() OVER(PARTITION BY CategoryID ORDER BY UnitPrice DESC) AS [DenseRank],
+    NTILE(2)     OVER(PARTITION BY CategoryID ORDER BY UnitPrice DESC) AS [PriceTier]
+FROM dbo.Products
+WHERE Discontinued = 0 
+  AND CategoryID IS NOT NULL
+ORDER BY CategoryID ASC, UnitPrice DESC;
+
+-- Task 11 Solution: Derived Table Subquery with Ranking
+SELECT 
+    c.CategoryName,
+    rp.ProductName,
+    rp.UnitPrice
+FROM (
+    SELECT 
+        CategoryID,
+        ProductName,
+        UnitPrice,
+        DENSE_RANK() OVER(PARTITION BY CategoryID ORDER BY UnitPrice DESC) AS [DenseRank]
+    FROM dbo.Products
+    WHERE Discontinued = 0
+) AS rp
+INNER JOIN dbo.Categories AS c
+    ON rp.CategoryID = c.CategoryID
+WHERE rp.DenseRank = 1
+ORDER BY c.CategoryName ASC;
+
+-- Task 12 Solution: Advanced Aggregations with STRING_AGG & HAVING
+SELECT 
+    o.OrderID,
+    o.OrderDate,
+    COUNT(od.OrderDetailID)         AS [TotalDistinctItems],
+    SUM(od.Quantity)                AS [TotalUnitCount],
+    STRING_AGG(p.ProductName, ' | ') AS [ManifestSummary]
+FROM dbo.Orders AS o
+INNER JOIN dbo.OrderDetails AS od
+    ON o.OrderID = od.OrderID
+INNER JOIN dbo.Products AS p
+    ON od.ProductID = p.ProductID
+GROUP BY o.OrderID, o.OrderDate
+HAVING COUNT(od.OrderDetailID) >= 2
+ORDER BY [TotalUnitCount] DESC;
 ```
