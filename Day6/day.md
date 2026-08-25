@@ -1,3 +1,5 @@
+no-
+
 # Day 6: Subqueries & Built-In Functions in Transact-SQL
 
 ---
@@ -26,7 +28,7 @@ A **subquery** (also called an *inner query* or *nested query*) is a `SELECT` st
    - In the `FROM` clause (as a **derived table**).
    - In data modification statements (`INSERT`, `UPDATE`, `DELETE`).
 3. **Nesting Depth**: T-SQL supports up to **32 levels** of nested subqueries, though in practice queries rarely exceed 2–3 levels for readability and performance.
-4. **Column Count Restrictions**: 
+4. **Column Count Restrictions**:
    - Scalar and multi-valued comparison operators require the inner subquery to return **exactly one column**.
    - Returning multiple columns in a subquery causes a syntax error (e.g., `Only one expression can be specified in the select list when the subquery is not introduced with EXISTS`).
    - The only exception is the `EXISTS` predicate, where `SELECT *` or `SELECT 1` is standard.
@@ -51,6 +53,7 @@ WHERE UnitPrice > (
 ```
 
 *Execution Mechanics:*
+
 1. The inner query `(SELECT AVG(UnitPrice) FROM dbo.Products)` executes first and returns a single scalar value (e.g., `$305.50`).
 2. The outer query evaluates `WHERE UnitPrice > 305.50` across all rows in `dbo.Products`.
 
@@ -104,14 +107,15 @@ INNER JOIN dbo.Orders AS o
 WHERE o.ShipCity = 'Seattle';
 ```
 
-| Factor | Subquery with `IN` | `INNER JOIN` |
-| :--- | :--- | :--- |
-| **Output Columns** | Can only return columns from the **outer query** table. | Can project columns from **both** tables. |
-| **Duplicate Handling** | Automatically handles duplicates without requiring `DISTINCT`. | If a customer has multiple orders, requires `DISTINCT` to eliminate duplicate customer rows. |
-| **Query Optimizer** | Internally, SQL Server often converts simple `IN` subqueries into semi-joins, producing identical execution plans. |
+| Factor                       | Subquery with`IN`                                                                                                 | `INNER JOIN`                                                                                |
+| :--------------------------- | :------------------------------------------------------------------------------------------------------------------ | :-------------------------------------------------------------------------------------------- |
+| **Output Columns**     | Can only return columns from the**outer query** table.                                                        | Can project columns from**both** tables.                                                |
+| **Duplicate Handling** | Automatically handles duplicates without requiring`DISTINCT`.                                                     | If a customer has multiple orders, requires`DISTINCT` to eliminate duplicate customer rows. |
+| **Query Optimizer**    | Internally, SQL Server often converts simple`IN` subqueries into semi-joins, producing identical execution plans. |                                                                                               |
 
 > [!CAUTION]
 > ### The Three-Valued Logic Trap with `NOT IN` and `NULL`
+>
 > In SQL, comparisons with `NULL` evaluate to `UNKNOWN`. If the dataset returned by a `NOT IN` subquery contains even a single `NULL` value, the entire `NOT IN` predicate evaluates to `UNKNOWN` or `FALSE` for every single outer row, resulting in **zero rows returned**!
 >
 > ```SQL
@@ -119,12 +123,12 @@ WHERE o.ShipCity = 'Seattle';
 > SELECT CustomerName 
 > FROM dbo.Customers 
 > WHERE CustomerID NOT IN (SELECT CustomerID FROM dbo.Orders);
-> 
+>
 > -- SAFE ALTERNATIVE 1: Filter out NULLs explicitly in the subquery
 > SELECT CustomerName 
 > FROM dbo.Customers 
 > WHERE CustomerID NOT IN (SELECT CustomerID FROM dbo.Orders WHERE CustomerID IS NOT NULL);
-> 
+>
 > -- SAFE ALTERNATIVE 2 (Recommended): Use NOT EXISTS
 > SELECT c.CustomerName
 > FROM dbo.Customers AS c
@@ -165,6 +169,7 @@ WHERE p1.UnitPrice = (
 ```
 
 *How it works step-by-step:*
+
 1. For every candidate row evaluated in outer table `p1`, SQL Server passes `p1.CategoryID` into the inner query.
 2. The inner query computes `MAX(UnitPrice)` specifically for that category.
 3. If `p1.UnitPrice` equals that category maximum, the row is included in the final result.
@@ -202,6 +207,7 @@ WHERE EXISTS (SELECT 1 FROM dbo.Orders AS o WHERE o.CustomerID = c.CustomerID);
 
 > [!TIP]
 > **Short-Circuit Optimization:**
+>
 > - In Approach A, SQL Server must scan the entire orders table for that customer to count every matching row.
 > - In Approach B, SQL Server uses **short-circuit evaluation**: the moment it encounters the *first* matching order for a customer, it immediately stops scanning and returns `TRUE`.
 > - Furthermore, `NOT EXISTS` is completely immune to the `NULL` pitfalls that plague `NOT IN`.
@@ -303,6 +309,7 @@ SELECT
 
 > [!NOTE]
 > **Deterministic vs. Non-Deterministic Functions:**
+>
 > - **Deterministic**: Functions that always return the exact same output given the same input parameters (e.g., `ROUND()`, `UPPER()`, `DATEADD()`). These can be indexed in computed columns.
 > - **Non-Deterministic**: Functions whose return value changes per invocation or depends on environment state (e.g., `GETDATE()`, `NEWID()`, `RAND()`). These cannot be indexed.
 
@@ -446,6 +453,7 @@ ORDER BY [AverageCategoryPrice] DESC;    -- 4. ORDER BY sorts final output
 
 > [!WARNING]
 > ### Error Msg 8120 Explained
+>
 > `Msg 8120: Column 'dbo.Products.ProductName' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause.`
 >
 > **The Golden Rule**: When `GROUP BY` is present, every single column in the `SELECT` clause must either be listed in the `GROUP BY` clause or be enclosed within an aggregate function.
@@ -459,4 +467,6 @@ ORDER BY [AverageCategoryPrice] DESC;    -- 4. ORDER BY sorts final output
 3. **Use Safe Type Conversions in Data Pipelines**: Prefer `TRY_CAST()` and `TRY_CONVERT()` over `CAST()` and `CONVERT()` when importing or transforming raw user input to prevent batch failures.
 4. **Use Derived Tables to Filter Window Functions**: Window/ranking functions cannot appear directly in `WHERE` or `HAVING` clauses; nest them inside a subquery in the `FROM` clause.
 5. **Remember T-SQL Logical Order of Execution**:
-   $$\text{FROM} \longrightarrow \text{WHERE} \longrightarrow \text{GROUP BY} \longrightarrow \text{HAVING} \longrightarrow \text{SELECT} \longrightarrow \text{DISTINCT} \longrightarrow \text{ORDER BY} \longrightarrow \text{TOP / OFFSET-FETCH}$$
+   $$
+   \text{FROM} \longrightarrow \text{WHERE} \longrightarrow \text{GROUP BY} \longrightarrow \text{HAVING} \longrightarrow \text{SELECT} \longrightarrow \text{DISTINCT} \longrightarrow \text{ORDER BY} \longrightarrow \text{TOP / OFFSET-FETCH}
+   $$

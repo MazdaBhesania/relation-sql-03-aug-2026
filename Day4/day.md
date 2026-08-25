@@ -1,4 +1,3 @@
-
 # Day 4: Aggregate Functions, GROUP BY, HAVING, and CASE WHEN
 
 ---

@@ -38,6 +38,7 @@ FROM (Joins & Virtual Tables) ---> WHERE ---> GROUP BY ---> HAVING ---> SELECT -
 T-SQL supports two syntax standards for joining tables:
 
 ### A. ANSI SQL-89 (Legacy Syntax — Avoid)
+
 In the SQL-89 standard, tables are listed in the `FROM` clause separated by commas, and the join condition is placed in the `WHERE` clause.
 
 ```SQL
@@ -49,10 +50,12 @@ WHERE c.CustomerID = o.CustomerID;
 
 > [!WARNING]
 > **Why ANSI SQL-89 is an Anti-Pattern:**
+>
 > - If you accidentally omit the `WHERE` clause, SQL Server will execute an unintended **Cartesian product** (cross join), matching every single row from table 1 with every row of table 2. On large production tables, this can lock tables, exhaust memory, and degrade performance.
 > - Mixing filtering conditions with join conditions inside `WHERE` makes queries difficult to read and maintain.
 
 ### B. ANSI SQL-92 (Modern Standard — Recommended)
+
 The ANSI SQL-92 standard introduces explicit `JOIN` operators and the `ON` clause to separate the **join relationship** from row filtering (`WHERE`).
 
 ```SQL
@@ -70,14 +73,14 @@ INNER JOIN dbo.Orders AS o
 
 ## 3. Overview of Join Types
 
-| Join Type | Description | Unmatched Rows Included? |
-| :--- | :--- | :--- |
-| **`INNER JOIN`** | Returns only rows where the join condition matches in **both** tables. | ❌ No (non-matching rows discarded) |
-| **`LEFT OUTER JOIN`** | Returns **all** rows from the left table, plus matching rows from the right table. | ✅ Yes (Left table preserved; NULLs for Right) |
-| **`RIGHT OUTER JOIN`** | Returns **all** rows from the right table, plus matching rows from the left table. | ✅ Yes (Right table preserved; NULLs for Left) |
-| **`FULL OUTER JOIN`** | Returns **all** rows from both tables, matching where possible. | ✅ Yes (Both tables preserved; NULLs where unmatched) |
-| **`CROSS JOIN`** | Returns the **Cartesian product** (every row of table 1 combined with every row of table 2). | N/A (No condition used) |
-| **`SELF JOIN`** | Joins a table to **itself** using distinct aliases (hierarchies, self-comparisons). | Depends on INNER / OUTER join syntax |
+| Join Type                      | Description                                                                                       | Unmatched Rows Included?                              |
+| :----------------------------- | :------------------------------------------------------------------------------------------------ | :---------------------------------------------------- |
+| **`INNER JOIN`**       | Returns only rows where the join condition matches in**both** tables.                       | ❌ No (non-matching rows discarded)                   |
+| **`LEFT OUTER JOIN`**  | Returns**all** rows from the left table, plus matching rows from the right table.           | ✅ Yes (Left table preserved; NULLs for Right)        |
+| **`RIGHT OUTER JOIN`** | Returns**all** rows from the right table, plus matching rows from the left table.           | ✅ Yes (Right table preserved; NULLs for Left)        |
+| **`FULL OUTER JOIN`**  | Returns**all** rows from both tables, matching where possible.                              | ✅ Yes (Both tables preserved; NULLs where unmatched) |
+| **`CROSS JOIN`**       | Returns the**Cartesian product** (every row of table 1 combined with every row of table 2). | N/A (No condition used)                               |
+| **`SELF JOIN`**        | Joins a table to**itself** using distinct aliases (hierarchies, self-comparisons).          | Depends on INNER / OUTER join syntax                  |
 
 ---
 
@@ -95,15 +98,18 @@ An `INNER JOIN` is the most common join type. It returns only rows that satisfy 
 ```
 
 ### Basic Syntax
+
 ```SQL
 SELECT c.CustomerID, c.CustomerName, o.OrderID, o.OrderDate, o.TotalAmount
 FROM dbo.Customers AS c
 INNER JOIN dbo.Orders AS o
     ON c.CustomerID = o.CustomerID;
 ```
+
 *(Note: The `INNER` keyword is optional; writing `JOIN` defaults to `INNER JOIN` in T-SQL).*
 
 ### Multi-Table Inner Joins
+
 To join three or more tables, chain consecutive `JOIN ... ON` statements:
 
 ```SQL
@@ -123,6 +129,7 @@ INNER JOIN dbo.Products AS p
 ```
 
 ### Composite Joins (Multiple Match Columns)
+
 When tables share a composite primary/foreign key relationship across multiple columns, include all keys in the `ON` clause using `AND`:
 
 ```SQL
@@ -140,6 +147,7 @@ INNER JOIN dbo.Products AS p
 Outer joins allow you to preserve rows from one or both tables even when no corresponding match exists in the joined table. Unmatched attributes are filled with `NULL`.
 
 ### A. Left Outer Join (`LEFT OUTER JOIN` / `LEFT JOIN`)
+
 Preserves **all** rows from the left (first) table. If a row in the left table has no match in the right table, right table columns return `NULL`.
 
 ```SQL
@@ -151,6 +159,7 @@ LEFT OUTER JOIN dbo.Orders AS o
 ```
 
 ### B. Right Outer Join (`RIGHT OUTER JOIN` / `RIGHT JOIN`)
+
 Preserves **all** rows from the right (second) table.
 
 ```SQL
@@ -165,6 +174,7 @@ RIGHT OUTER JOIN dbo.Orders AS o
 > Most professional database developers prefer `LEFT JOIN` over `RIGHT JOIN` for readability, as queries are typically structured reading from left-to-right (or top-to-bottom).
 
 ### C. Full Outer Join (`FULL OUTER JOIN` / `FULL JOIN`)
+
 Combines the effects of both `LEFT` and `RIGHT` joins. It returns all matched rows, plus all unmatched rows from the left table (with `NULL`s for the right), plus all unmatched rows from the right table (with `NULL`s for the left).
 
 ```SQL
@@ -200,16 +210,18 @@ WHERE oi.OrderItemID IS NULL;
 
 > [!CAUTION]
 > When filtering outer joins in the `WHERE` clause, make sure your filter does not accidentally convert the outer join into an inner join!
-> 
+>
 > *Problem:*
+>
 > ```SQL
 > SELECT c.CustomerName, o.TotalAmount
 > FROM dbo.Customers AS c
 > LEFT JOIN dbo.Orders AS o ON c.CustomerID = o.CustomerID
 > WHERE o.TotalAmount > 100.00; -- Filters out customers with NULL orders! Converts to INNER JOIN!
 > ```
-> 
+>
 > *Solution (Put right-table predicates in the `ON` clause or handle NULLs in `WHERE`):*
+>
 > ```SQL
 > SELECT c.CustomerName, o.TotalAmount
 > FROM dbo.Customers AS c
@@ -244,6 +256,7 @@ CROSS JOIN dbo.Products AS p;
 A **Self Join** is when a table is joined to itself. This is commonly used when a table contains a hierarchical relationship (such as an organizational chart or multi-level product categories) or when comparing records within the same table.
 
 ### Example A: Employee & Manager Hierarchy
+
 An `Employees` table where each employee's record includes a `ManagerID` referencing another `EmployeeID` in the same table:
 
 ```SQL
@@ -257,9 +270,11 @@ FROM dbo.Employees AS emp
 LEFT JOIN dbo.Employees AS mgr
     ON emp.ManagerID = mgr.EmployeeID;
 ```
+
 *(We use `LEFT JOIN` so that top-level leaders/executives who have `ManagerID = NULL` are still included in the result set).*
 
 ### Example B: Comparing Rows in the Same Table
+
 Find pairs of customers located in the same city:
 
 ```SQL
@@ -280,7 +295,7 @@ INNER JOIN dbo.Customers AS c2
 1. **Always Use Table Aliases**: Make queries concise and legible (e.g. `FROM dbo.Customers AS c INNER JOIN dbo.Orders AS o ON c.CustomerID = o.CustomerID`).
 2. **Explicitly Qualify Column Names**: When querying multiple tables, always prefix column names with their table alias (e.g., `c.CustomerID` instead of just `CustomerID`) to avoid the `Ambiguous column name` error.
 3. **Prefer ANSI SQL-92**: Always use explicit `INNER JOIN`, `LEFT JOIN`, `RIGHT JOIN`, `FULL JOIN`, or `CROSS JOIN` syntax with `ON` predicates rather than comma-separated lists in `FROM`.
-4. **Be Deliberate with `ON` vs. `WHERE`**: 
+4. **Be Deliberate with `ON` vs. `WHERE`**:
    - `ON` determines how rows are matched during the join phase.
    - `WHERE` filters rows after the join is performed.
 5. **Index Foreign Key Columns**: In production databases, ensure columns used in `ON` clauses (Foreign Keys) are indexed to optimize join performance.
