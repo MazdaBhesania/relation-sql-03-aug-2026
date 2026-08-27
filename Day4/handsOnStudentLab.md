@@ -1,3 +1,5 @@
+SUM()
+
 Setup Script (Run in SSMS):
 
 ```SQL
@@ -96,5 +98,92 @@ Write a query grouping by `SalesRep` that computes:
 - Count of high-value transactions (`SaleAmount >= 3000.00`) as `[High Value Deals Count]` (using `COUNT` with a `CASE` expression)
 - Sort by `[Total Revenue]` in descending order.
 
+---
+
+## Lab Solutions (Check Your Work)
+
 ```SQL
+-- ============================================================================
+-- Day 4 Lab Solutions
+-- ============================================================================
+
+-- Task 1 Solution: Table-Wide Aggregates
+SELECT 
+    COUNT(*) AS [Total Transactions],
+    SUM(SaleAmount) AS [Total Revenue],
+    AVG(SaleAmount) AS [Average Sale],
+    MIN(SaleAmount) AS [Smallest Sale],
+    MAX(SaleAmount) AS [Largest Sale],
+    SUM(UnitsSold) AS [Total Units Sold]
+FROM dbo.Sales;
+
+
+-- Task 2 Solution: Basic Grouping with GROUP BY
+SELECT 
+    SalesRep,
+    COUNT(*) AS [Total Deals],
+    SUM(SaleAmount) AS [Total Revenue],
+    AVG(SaleAmount) AS [Average Deal Amount]
+FROM dbo.Sales
+GROUP BY SalesRep
+ORDER BY [Total Revenue] DESC;
+
+
+-- Task 3 Solution: Multi-Column Grouping
+SELECT 
+    Region,
+    ProductCategory,
+    COUNT(*) AS [Transaction Count],
+    SUM(SaleAmount) AS [Category Revenue]
+FROM dbo.Sales
+GROUP BY Region, ProductCategory
+ORDER BY Region ASC, [Category Revenue] DESC;
+
+
+-- Task 4 Solution: Filtering Rows Before Aggregation with WHERE
+SELECT 
+    SalesRep,
+    SUM(SaleAmount) AS [East Revenue],
+    AVG(SaleAmount) AS [Average East Deal]
+FROM dbo.Sales
+WHERE Region = 'East'
+GROUP BY SalesRep
+ORDER BY [East Revenue] DESC;
+
+
+-- Task 5 Solution: Filtering Aggregated Groups with HAVING
+SELECT 
+    ProductCategory,
+    COUNT(*) AS [Transaction Count],
+    SUM(SaleAmount) AS [Total Revenue]
+FROM dbo.Sales
+GROUP BY ProductCategory
+HAVING SUM(SaleAmount) > 10000.00 AND COUNT(*) > 4
+ORDER BY [Total Revenue] DESC;
+
+
+-- Task 6 Solution: Conditional Logic with CASE WHEN
+SELECT 
+    SaleID,
+    SalesRep,
+    ProductCategory,
+    SaleAmount,
+    CASE 
+        WHEN SaleAmount >= 3500.00 THEN 'High Value'
+        WHEN SaleAmount BETWEEN 1500.00 AND 3499.99 THEN 'Medium Value'
+        ELSE 'Low Value'
+    END AS [SaleTier]
+FROM dbo.Sales
+ORDER BY SaleAmount DESC;
+
+
+-- Task 7 Solution: Advanced - Conditional Aggregation
+SELECT 
+    SalesRep,
+    SUM(SaleAmount) AS [Total Revenue],
+    SUM(CASE WHEN PaymentMethod = 'Credit Card' THEN SaleAmount ELSE 0 END) AS [Credit Card Revenue],
+    COUNT(CASE WHEN SaleAmount >= 3000.00 THEN 1 END) AS [High Value Deals Count]
+FROM dbo.Sales
+GROUP BY SalesRep
+ORDER BY [Total Revenue] DESC;
 ```
